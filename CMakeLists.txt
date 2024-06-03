@@ -6,8 +6,9 @@ project(
     LANGUAGES C CXX
 )
 
-set(CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory(External/GoogleTest)
+add_subdirectory(External/Essence)
 add_subdirectory(Sources)
 add_subdirectory(Tests)
