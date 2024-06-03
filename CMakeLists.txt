@@ -8,5 +8,6 @@ project(
 
 set(CXX_STANDARD 17)
 
-add_subdirectory(Tests)
+add_subdirectory(External/GoogleTest)
 add_subdirectory(Sources)
+add_subdirectory(Tests)

@@ -1,0 +1,3 @@
+[submodule "External/Essence"]
+	path = External/Essence
+	url = https://github.com/KenM4sters/Essence.git
