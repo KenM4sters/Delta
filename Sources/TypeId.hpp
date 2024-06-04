@@ -1,6 +1,5 @@
 #ifndef ECS_TYPEID_HPP
 #define ECS_TYPEID_HPP
-#include <Matrix4.hpp>
 #include <iostream>
 #include <vector>
 
