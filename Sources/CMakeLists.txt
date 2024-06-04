@@ -9,7 +9,9 @@ project(
 set(CXX_STANDARD 17)
 
 add_library(ECSSources
-    Entity.cpp
+    Component.cpp
+    System.cpp
+    ECS.cpp
 )
 
 target_include_directories(ECSSources 

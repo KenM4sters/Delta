@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ECS_TYPEID_HPP
+#define ECS_TYPEID_HPP
 #include <Matrix4.hpp>
 #include <iostream>
 #include <vector>
@@ -20,7 +21,7 @@ public:
     static const TypeID GetNewID() 
     {
         static TypeID const newId = mCount++;
-        return newID;
+        return newId;
     }
 
 private:
@@ -30,3 +31,5 @@ private:
 template<class T> TypeID TypeIDGenerator<T>::mCount = 0;
 
 }
+
+#endif

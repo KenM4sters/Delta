@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ECS_COMPONENT_HPP
+#define ECS_COMPONENT_HPP
 #include <iostream>
 #include <TypeId.hpp>
 
@@ -31,4 +32,6 @@ public:
     static const ComponentTypeID GetTypeID();
 };
 }
+
+#endif
 

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ECS_ENTITY_HPP
+#define ECS_ENTITY_HPP
 #include <iostream>
 #include <vector>
 #include "TypeId.hpp"
@@ -32,5 +33,6 @@ private:
     EntityID mID;
     ECS* mECS = nullptr;
 };
-
 }
+
+#endif

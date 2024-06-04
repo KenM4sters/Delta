@@ -1,14 +1,15 @@
-#pragma once
+#ifndef ECS_ECS_HPP
+#define ECS_ECS_HPP
 #include "TypeId.hpp"
 #include "Archetype.hpp"
-#include <unordered_map>
 #include "Component.hpp"
+#include "System.hpp"
+#include <unordered_map>
+#include <functional>
+
 
 namespace dt 
 {
-
-class ISystemBase;
-
 class ECS 
 {
 private: 
@@ -38,9 +39,9 @@ public:
 
     void RegisterEntity(const EntityID& entity);
 
-    void RunSystems(const uint8_t layer, const float ts);
+    void RunSystems(const uint8_t layer, const float elapsedTime);
 
-    const Archetype* GetArchetype(const ArchetypeID& id) const;
+    Archetype* GetArchetype(const ArchetypeID& id);
 
     template<class T, typename... Args>
     T* AddComponent(const EntityID& entity, Args&&... args);
@@ -69,3 +70,5 @@ private:
 
 };
 }
+
+#endif
