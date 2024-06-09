@@ -1,17 +1,17 @@
-#include "ECS.hpp"
+#include "Registry.hpp"
 #include <stdexcept>
 #include <algorithm>
 
-namespace dt 
+namespace slv 
 {
 
-ECS::ECS()
+Registry::Registry()
     : mNumEntities{1}
 {
 
 }
 
-ECS::~ECS() 
+Registry::~Registry() 
 {
     for(Archetype* archetype : mArchetypes)
     {
@@ -32,14 +32,14 @@ ECS::~ECS()
 }
 
 
-const EntityID ECS::GetNewID() 
+const EntityID Registry::GetNewID() 
 {
     return mNumEntities++;
 }
 
 
 template<class T>
-void ECS::RegisterComponent() 
+void Registry::RegisterComponent() 
 {
     ComponentTypeID componentTypeID = Component<T>::GetTypeID();
 
@@ -53,19 +53,19 @@ void ECS::RegisterComponent()
 
 
 template<class T>
-bool ECS::IsComponentRegistered() 
+bool Registry::IsComponentRegistered() 
 {
 
 }
 
 
-void ECS::RegisterSystem(const uint8_t& layer, ISystemBase* system) 
+void Registry::RegisterSystem(const uint8_t& layer, ISystemBase* system) 
 {
     mSystemsMap[layer].push_back(system);
 }
 
 
-void ECS::RegisterEntity(const EntityID& entity) 
+void Registry::RegisterEntity(const EntityID& entity) 
 {
     Record pch{};
     pch.archetype = nullptr;
@@ -74,7 +74,7 @@ void ECS::RegisterEntity(const EntityID& entity)
 }
 
 
-void ECS::RunSystems(const uint8_t layer, const float elapsedTime) 
+void Registry::RunSystems(const uint8_t layer, const float elapsedTime) 
 {
     for(auto system : mSystemsMap[layer]) 
     {
@@ -95,7 +95,7 @@ void ECS::RunSystems(const uint8_t layer, const float elapsedTime)
 }
 
 
-Archetype* ECS::GetArchetype(const ArchetypeID& id) 
+Archetype* Registry::GetArchetype(const ArchetypeID& id) 
 {
     for(const auto& archetype : mArchetypes) 
     {
@@ -117,11 +117,13 @@ Archetype* ECS::GetArchetype(const ArchetypeID& id)
             return newArchetype;
         }
     } 
+
+    return nullptr;
 }
 
 
 template<class T, typename... Args>
-T* ECS::AddComponent(const EntityID& entity, Args&&... args) 
+T* Registry::AddComponent(const EntityID& entity, Args&&... args) 
 {
     if(!IsComponentRegistered<T>()) 
     {
@@ -297,7 +299,7 @@ T* ECS::AddComponent(const EntityID& entity, Args&&... args)
 
 
 template<class T>
-void ECS::RemoveComponent(const EntityID& entity) 
+void Registry::RemoveComponent(const EntityID& entity) 
 {
     if(!IsComponentRegistered<T>()) 
     {
@@ -452,20 +454,20 @@ void ECS::RemoveComponent(const EntityID& entity)
 
 
 template<class T>
-T* ECS::GetComponent(const EntityID& entity) 
+T* Registry::GetComponent(const EntityID& entity) 
 {
     
 }
 
 
 template<class T>
-bool ECS::HasComponent(const EntityID& entity) 
+bool Registry::HasComponent(const EntityID& entity) 
 {
 
 }
 
 
-void ECS::RemoveEntity(const EntityID& entity) 
+void Registry::RemoveEntity(const EntityID& entity) 
 {
     if(!mEntiyArchetypeMap.count(entity))
         return; // it doesn't exist
@@ -542,7 +544,7 @@ void ECS::RemoveEntity(const EntityID& entity)
 
 
 template<class... Ts>
-std::vector<EntityID> ECS::GetAllEnittiesWith() 
+std::vector<EntityID> Registry::GetAllEnittiesWith() 
 {
 
 }

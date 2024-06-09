@@ -1,6 +1,6 @@
 #include "Component.hpp"
 
-namespace dt 
+namespace slv 
 {
 
 template<class T>

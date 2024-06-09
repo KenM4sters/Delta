@@ -1,11 +1,16 @@
-#pragma once
+#ifndef SILVERBACK_ARCHETYPE_HPP
+#define SILVERBACK_ARCHETYPE_HPP
+
 #include "TypeId.hpp"
 
-namespace dt 
+namespace slv 
 {
 
 typedef unsigned char* ComponentData;
 
+/**
+ * @brief Archetype definition.
+*/
 struct Archetype 
 {
     ArchetypeID typeId;
@@ -13,7 +18,6 @@ struct Archetype
     std::vector<ComponentData> componentData;
     std::vector<size_t> componentDataSize;
 };
-
-
-
 }
+
+#endif

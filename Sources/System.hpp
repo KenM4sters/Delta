@@ -1,14 +1,19 @@
-#ifndef ECS_SYSTEM_HPP
-#define ECS_SYSTEM_HPP
+#ifndef SILVERBACK_SYSTEM_HPP
+#define SILVERBACK_SYSTEM_HPP
+
 #include "TypeId.hpp"
 #include "Archetype.hpp"
+
 #include <functional>
 
-namespace dt 
+namespace slv 
 {
 
-class ECS;
+class Registry;
 
+/**
+ * @brief Base System interface.
+*/
 class ISystemBase 
 {
 public:
@@ -21,17 +26,23 @@ public:
 };
 
 
+/**
+ * @brief Derived System class.
+*/
 template<class... Cs>
 class System : public ISystemBase 
 {
 public:
-	System(ECS& ecs, const std::uint8_t& layer);
-    ~System();
-
 	typedef std::function<void(const float, const std::vector<EntityID>&, Cs*...)> ActionDef;
+	
+	System(Registry& registry, const std::uint8_t& layer);
+
+    ~System();
 
 	virtual ArchetypeID GetArchetypeTarget() const override;
 
+	virtual void DoAction(const float elapsedMilliseconds, Archetype* archetype) const override;
+	
 	void Action(ActionDef action);
 
 private:
@@ -51,11 +62,12 @@ private:
 		Ts... ts
     );
 
-	virtual void DoAction(const float elapsedMilliseconds, Archetype* archetype) const override;
+private:
+	Registry& mRegistry;
 
-	ECS& mECS;
 	ActionDef mAction;
-	bool mActionSet{false};
+	
+	bool mActionSet = false;
 
 };
 }

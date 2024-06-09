@@ -1,2 +1,2 @@
 #!/bin/bash
-build/Tests/UnitTests/UnitTest
+build/Tests/UnitTests/SilverbackUnitTests

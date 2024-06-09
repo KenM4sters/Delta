@@ -1,10 +1,16 @@
-#ifndef ECS_COMPONENT_HPP
-#define ECS_COMPONENT_HPP
-#include <iostream>
+#ifndef SILVERBACK_COMPONENT_HPP
+#define SILVERBACK_COMPONENT_HPP
+
 #include <TypeId.hpp>
 
-namespace dt 
+#include <iostream>
+
+namespace slv 
 {
+
+/**
+ * @brief Base Component interface.
+*/
 class IComponentBase 
 {
 public:
@@ -19,6 +25,9 @@ public:
 }; 
 
 
+/**
+ * @brief Derived Component.
+*/
 template<class T>
 class Component : public IComponentBase 
 {

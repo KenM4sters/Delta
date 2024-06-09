@@ -1,2 +1,2 @@
 #!/bin/bash
-build/Tests/CustomTests/DeltaCustomTests
+build/Tests/CustomTests/SilverbackCustomTests

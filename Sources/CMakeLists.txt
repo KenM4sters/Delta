@@ -11,7 +11,7 @@ set(CXX_STANDARD 17)
 add_library(${PROJECT_NAME}
     Component.cpp
     System.cpp
-    ECS.cpp
+    Registry.cpp
 )
 
 target_include_directories(${PROJECT_NAME} 

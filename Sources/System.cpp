@@ -1,25 +1,26 @@
 #include "System.hpp"
-#include "ECS.hpp"
+#include "Registry.hpp"
 #include <tuple>
 
-namespace dt 
+namespace slv 
 {
 
 /**
- * @brief Helper function sort archetype targets.
+ * @brief Simple helper function to sort archetype targets.
 */
 template<class... Ts>
-ArchetypeID sort_targets(ArchetypeID types)
+ArchetypeID SortTargets(ArchetypeID types)
 {
     std::sort(types.begin(), types.end());
     return types;
 }
 
+
 template<class...Cs>
-System<Cs...>::System(ECS& ecs, const std::uint8_t& layer)
-    : mECS{ecs}, mActionSet{false}
+System<Cs...>::System(Registry& registry, const std::uint8_t& layer)
+    : mRegistry{registry}, mActionSet{false}
 {
-    mECS.RegisterSystem(layer, this);
+    mRegistry.RegisterSystem(layer, this);
 }
 
 template<class...Cs>
@@ -31,7 +32,7 @@ System<Cs...>::~System()
 template<class... Cs>
 ArchetypeID System<Cs...>::GetArchetypeTarget() const  
 {
-    return sort_targets({Component<Cs>::GetTypeId()...});
+    return SortTargets({Component<Cs>::GetTypeId()...});
 }
 
 template<class... Cs>
@@ -73,8 +74,7 @@ std::enable_if_t<Index != sizeof...(Cs)> System<Cs...>::DoAction(const float ela
     }
     if(index2 == archetypes.size())
     {
-        throw std::runtime_error
-            ("System was executed against an incorrect Archetype");
+        throw std::runtime_error("System was executed against an incorrect Archetype");
     }
 
     DoAction<Index+1>(elapsedMilliseconds, archetypes, entities, 
@@ -82,7 +82,7 @@ std::enable_if_t<Index != sizeof...(Cs)> System<Cs...>::DoAction(const float ela
 }
 
 template<class... Cs>
-void System<Cs...>::DoAction(const float elapsedMilliseconds,  Archetype* archetype) const  
+void System<Cs...>::DoAction(const float elapsedMilliseconds, Archetype* archetype) const  
 {
     if(mActionSet) 
     {

@@ -1,7 +1,7 @@
-add_executable(DeltaCustomTests main.cpp)
+add_executable(SilverbackCustomTests main.cpp)
 
-target_include_directories(DeltaCustomTests 
+target_include_directories(SilverbackCustomTests 
     PUBLIC ${CMAKE_SOURCE_DIR}/Sources/
 )
 
-target_link_libraries(DeltaCustomTests ${PROJECT_NAME})
+target_link_libraries(SilverbackCustomTests ${PROJECT_NAME})

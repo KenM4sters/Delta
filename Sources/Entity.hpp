@@ -1,37 +1,42 @@
-#ifndef ECS_ENTITY_HPP
-#define ECS_ENTITY_HPP
+#ifndef SILVERBACK_ENTITY_HPP
+#define SILVERBACK_ENTITY_HPP
+
+#include "TypeId.hpp"
+#include "Registry.hpp"
+
 #include <iostream>
 #include <vector>
-#include "TypeId.hpp"
-#include "ECS.hpp"
 
-namespace dt 
+namespace slv 
 {
 
+/**
+ * @brief Entity Class.
+*/
 class Entity 
 {
 public:
-    explicit Entity(ECS* ecs)
-        : mID(ecs->GetNewID()), mECS(ecs)
+    explicit Entity(Registry* registry)
+        : mID{registry->GetNewID()}, mRegistry{registry}
     {
-        mECS->RegisterEntity(mID);
+        mRegistry->RegisterEntity(mID);
     }
 
     template<class T, typename... Args>
     T* AddComponent(Args&&... args) 
     {
-        return mECS->AddComponent(mID, std::forward<Args>(args)...);
+        return mRegistry->AddComponent(mID, std::forward<Args>(args)...);
     }
 
     template<class T>
     T* AddComponent(T&& t) 
     {
-        return mECS->AddComponent(mID, std::forward<T>(t));
+        return mRegistry->AddComponent(mID, std::forward<T>(t));
     }
 
 private:
     EntityID mID;
-    ECS* mECS = nullptr;
+    Registry* mRegistry = nullptr;
 };
 }
 
