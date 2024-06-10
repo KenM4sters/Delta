@@ -11,4 +11,6 @@ TEST(ExampleTest, Registry)
 
     registry.AddComponent<Velocity>(1, 1.0f, 2.0f);
 
+    EXPECT_EQ(true, true);
+
 }

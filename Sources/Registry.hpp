@@ -430,7 +430,7 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
     {
         ArchetypeID newArchetypeId(1, componentId);
 
-        IComponentBase* newComponent = mComponentBaseMap[componentId];
+        IComponentBase* newComp = mComponentBaseMap[componentId];
 
         auto newArchetype = GetArchetype(newArchetypeId);
 
@@ -445,9 +445,9 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
             
             for(size_t i = 0; i < newArchetype->entities.size(); i++) 
             {
-                newComponent->MoveData(&newArchetype->componentData[0][i * compDataSize],
+                newComp->MoveData(&newArchetype->componentData[0][i * compDataSize],
 						&newData[i * compDataSize]);
-			    newComponent->DestroyData(&newArchetype->componentData[0][i * compDataSize]);
+			    newComp->DestroyData(&newArchetype->componentData[0][i * compDataSize]);
             }
 
             delete[](newArchetype->componentData[0]);
