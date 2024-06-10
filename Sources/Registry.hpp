@@ -1,5 +1,5 @@
-#ifndef SILVERBACK_SILVERBACK_HPP
-#define SILVERBACK_SILVERBACK_HPP
+#ifndef SILVERBACK_REGISTRY_HPP
+#define SILVERBACK_REGISTRY_HPP
 
 #include "TypeId.hpp"
 #include "Archetype.hpp"

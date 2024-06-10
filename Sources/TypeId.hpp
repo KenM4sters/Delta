@@ -24,8 +24,8 @@ public:
     template<class U>
     static const TypeID GetNewID() 
     {
-        static TypeID const newId = mCount++; // Must be static to retain value of each type of component.
-        return newId;
+        // static TypeID newId = mCount++; // Must be static to retain value of each type of component.
+        return mCount++;
     }
 
 private:
