@@ -1,6 +1,4 @@
-#include <gtest/gtest.h>
-#include <Silverback.hpp>
-#include "Components.hpp"
+#include "Includes.hpp"
 
 
 TEST(ExampleTest, Registry) 
@@ -9,8 +7,8 @@ TEST(ExampleTest, Registry)
 
     slv::Entity player(&registry);
 
-    Position position{1.0f};
+    registry.RegisterComponent<Velocity>(); 
 
-    player.AddComponent<Position>(1.0f);
+    registry.AddComponent<Velocity>(1, 1.0f, 2.0f);
 
 }

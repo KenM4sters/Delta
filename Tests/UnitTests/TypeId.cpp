@@ -1,6 +1,4 @@
-#include <gtest/gtest.h>
-#include <Silverback.hpp>
-#include "Components.hpp"
+#include "Includes.hpp"
 
 TEST(ExampleTest, TypeID) 
 {

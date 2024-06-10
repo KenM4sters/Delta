@@ -1,4 +1,4 @@
-#include <Registry.hpp>
+#include <Silverback.hpp>
 #include <iostream>
 
 struct Position 
@@ -23,7 +23,4 @@ int main(int argc, char** argv)
     std::cout << id_2 << std::endl;
     std::cout << id_3 << std::endl;
     std::cout << id_4 << std::endl;
-
-    
-    
 }
