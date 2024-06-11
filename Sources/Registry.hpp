@@ -222,7 +222,11 @@ void Registry::RegisterComponent()
 template<class T>
 bool Registry::IsComponentRegistered() 
 {
-
+    if(mComponentBaseMap.count(Component<T>::GetTypeID())) 
+    {
+        return true;
+    }
+    return false;
 }
 
 
@@ -264,28 +268,29 @@ inline void Registry::RunSystems(const uint8_t layer, const float elapsedTime)
 
 inline Archetype* Registry::GetArchetype(const ArchetypeID& id) 
 {
+    // Archetype already exists...
+    //
     for(const auto& archetype : mArchetypes) 
     {
         if(archetype->typeId == id) 
         {
             return archetype;
-        } 
-        else {
-            Archetype* newArchetype = new Archetype;
-            newArchetype->typeId = id;
-            mArchetypes.push_back(newArchetype);
-
-            for(size_t i = 0; i < id.size(); i++) 
-            {
-                newArchetype->componentData.push_back(new unsigned char[0]);
-                newArchetype->componentDataSize.push_back(0);
-            }
-
-            return newArchetype;
         }
     } 
 
-    return nullptr;
+    // Archetype doesn't exist, so we'll create one and return it.
+    //
+    Archetype* newArchetype = new Archetype;
+    newArchetype->typeId = id;
+    mArchetypes.push_back(newArchetype);
+
+    for(size_t i = 0; i < id.size(); i++) 
+    {
+        newArchetype->componentData.push_back(new unsigned char[0]);
+        newArchetype->componentDataSize.push_back(0);
+    }
+
+    return newArchetype;
 }
 
 
@@ -432,7 +437,7 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
 
         IComponentBase* newComp = mComponentBaseMap[componentId];
 
-        auto newArchetype = GetArchetype(newArchetypeId);
+        newArchetype = GetArchetype(newArchetypeId);
 
         size_t currentSize = newArchetype->entities.size()*compDataSize;
         size_t newSize = currentSize + compDataSize;

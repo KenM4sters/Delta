@@ -17,4 +17,9 @@ struct Velocity
     float y;
 };
 
+struct Texture
+{
+    const char* texture = "";
+};
+
 #endif

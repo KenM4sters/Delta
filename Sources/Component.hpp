@@ -9,7 +9,9 @@ namespace slv
 {
 
 /**
- * @brief Base Component interface.
+ * @brief The base Component interface ensures that any "component" that the user
+ * comes up with can be stores within an Archetype using a pointer and 
+ * polymorphism. 
 */
 class IComponentBase 
 {
@@ -26,7 +28,13 @@ public:
 
 
 /**
- * @brief Derived Component.
+ * @brief The derived component class is essentially a wrapper around the data
+ * that the user is trying to associate an entity with. All "logic" depends on the 
+ * System instances that subscribe to at least this component (could be more), or 
+ * more specifically the Archetype that the component belongs to. 
+ * We're managing memory ourselves here so that the user doesn't need to worry about or 
+ * inherit from some generic base class. Remember, the goal of this framework to 
+ * release an API that's as simple, and intuitive as possible.
 */
 template<class T>
 class Component : public IComponentBase 

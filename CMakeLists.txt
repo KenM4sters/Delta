@@ -8,5 +8,8 @@ project(
 
 set(CMAKE_CXX_STANDARD 20)
 
+enable_testing()
+include(CTest)
+
 add_subdirectory(External/GoogleTest)
 add_subdirectory(Tests)
