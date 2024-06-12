@@ -13,8 +13,11 @@ typedef unsigned char* ComponentData;
  * our ECS framework, and many alternatives to using an archetype/archetype-like structure exist. 
  * An instance of an archetype stores all *registered* components of the same type
  * (Component<T>::GetTypeId() returns a different number but from the same number pool),
- * along with the entities (just UUIDs) that they belong to, as well as the id of the 
- * archetype itself and the size of each component. 
+ * along with the entities (just UUIDs) that they belong to. 
+ * The archetype also needs to hold the size of each component in componentData since
+ * we're managing memory ourselves, as well as the id of the archetype itself,
+ * which is just a vector of all the IDs that belong to the components in 
+ * componentData.
 */
 struct Archetype 
 {

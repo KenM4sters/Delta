@@ -15,7 +15,9 @@ class ISystemBase;
 template<class... Cs>
 class System;
 
-    
+/**
+ * @brief 
+*/
 class Registry 
 {
 private: 
@@ -170,6 +172,14 @@ private:
 
 };
 
+
+/**
+ * 
+ * 
+ *  Implementation for Registry class.
+ * 
+ * 
+*/
 
 
 inline Registry::Registry()
@@ -475,14 +485,14 @@ void Registry::RemoveComponent(const EntityID& entity)
 {
     if(!IsComponentRegistered<T>()) 
     {
-        throw std::runtime_error("Attempting to AddComponent with an unregistered component!");
+        throw std::runtime_error("Attempting to RemoveComponent with an unregistered component!");
     }
 
     ComponentTypeID componentId = Component<T>::GetTypeID();
 
     if(!mEntiyArchetypeMap.count(entity)) 
     {
-        return; // It doesn't exist.
+        return; // Entity doesn't exist.
     }
 
     Record& record = mEntiyArchetypeMap[entity];
@@ -601,8 +611,6 @@ void Registry::RemoveComponent(const EntityID& entity)
         oldArchetype->componentData[i] = newData;
     }
 
-    // each entity in the old archetypes entities after this one now
-    // has an index 1 less
     std::vector<EntityID>::iterator willBeRemoved = std::find(
         oldArchetype->entities.begin(),
         oldArchetype->entities.end(),
@@ -628,21 +636,46 @@ void Registry::RemoveComponent(const EntityID& entity)
 template<class T>
 T* Registry::GetComponent(const EntityID& entity) 
 {
-    
+    if(!HasComponent<T>(entity)) 
+    {
+        throw std::runtime_error("entity does not have requested component!");
+    }
+
+    Record& record = mEntiyArchetypeMap[entity];
+
+    Archetype* archetype = record.archetype;
+
+    ComponentTypeID targetCompId = Component<T>::GetTypeID(); 
+
+    IComponentBase* basePtr = mComponentBaseMap[targetCompId];
+
+    return basePtr; 
+
 }
 
 
 template<class T>
 bool Registry::HasComponent(const EntityID& entity) 
 {
+    Record& record = mEntiyArchetypeMap[entity];
+    
+    Archetype* archetype = record.archetype;
 
+    ComponentTypeID targetCompId = Component<T>::GetTypeID(); 
+
+    for(const auto& compId : archetype->typeId) 
+    {
+        if(compId == targetCompId) return true;
+    }
+
+    return false;
 }
 
 
 void Registry::RemoveEntity(const EntityID& entity) 
 {
     if(!mEntiyArchetypeMap.count(entity))
-        return; // it doesn't exist
+        return; // It doesn't exist.
 
     Record& record = mEntiyArchetypeMap[entity];
 
@@ -651,7 +684,7 @@ void Registry::RemoveEntity(const EntityID& entity)
     if(!oldArchetype)
     {
         mEntiyArchetypeMap.erase(entity);
-        return; // we wouldn't know where to delete
+        return; // We wouldn't know where to delete.
     }
 
     for(std::size_t i = 0; i < oldArchetype->typeId.size(); ++i)
@@ -706,7 +739,7 @@ void Registry::RemoveEntity(const EntityID& entity)
                   [this,&oldArchetype,&entity](const EntityID& entityId)
     {
         if(entityId == entity)
-            return; // no need to adjust our removing one
+            return; // No need to adjust our removing one.
         Record& moveR = mEntiyArchetypeMap[entityId];
         moveR.index -= 1;
     });
@@ -722,6 +755,13 @@ std::vector<EntityID> Registry::GetAllEnittiesWith()
 }
 
 
+/**
+ * 
+ * 
+ *  Implementation for System class.
+ * 
+ * 
+*/
 
 
 /**
