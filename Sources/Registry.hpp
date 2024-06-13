@@ -12,6 +12,7 @@ namespace slv
 
 class Entity;
 class ISystemBase;
+
 template<class... Cs>
 class System;
 
@@ -69,6 +70,9 @@ public:
 
     inline const EntityID GetNewID();
 
+    template<class T, class...Ts>
+    inline void ProcessComponents(std::vector<ComponentTypeID>* components);
+
 private:
     std::vector<Archetype*> mArchetypes{};
 
@@ -97,13 +101,13 @@ public:
     template<class T, typename... Args>
     T* AddComponent(Args&&... args) 
     {
-        return mRegistry->AddComponent(mID, std::forward<Args>(args)...);
+        return mRegistry->AddComponent<T>(mID, std::forward<Args>(args)...);
     }
 
     template<class T>
     T* AddComponent(T&& t) 
     {
-        return mRegistry->AddComponent(mID, std::forward<T>(t));
+        return mRegistry->AddComponent<T>(mID, std::forward<T>(t));
     }
 
 private:
@@ -192,20 +196,24 @@ inline Registry::~Registry()
 {
     for(Archetype* archetype : mArchetypes)
     {
-        for(std::size_t i = 0; i < archetype->typeId.size(); ++i)
+        for(size_t i = 0; i < archetype->typeId.size(); ++i)
         {
             IComponentBase* const comp = mComponentBaseMap[archetype->typeId[i]];
-            const std::size_t& dataSize = comp->GetSize();
-            for(std::size_t e = 0; e < archetype->entities.size(); ++e)
+            const size_t& dataSize = comp->GetSize();
+            for(size_t e = 0; e < archetype->entities.size(); ++e)
             {
                 comp->DestroyData(&archetype->componentData[i][e*dataSize]);
             }
-            delete [] archetype->componentData[i];
+            delete[] archetype->componentData[i];
         }
+
         delete archetype;
     }
-    for(auto& p : mComponentBaseMap)
+
+    for(auto& p : mComponentBaseMap) 
+    {
         delete p.second;
+    }
 }
 
 
@@ -490,7 +498,7 @@ void Registry::RemoveComponent(const EntityID& entity)
 
     ComponentTypeID componentId = Component<T>::GetTypeID();
 
-    if(!mEntiyArchetypeMap.count(entity)) 
+    if(!mEntiyArchetypeMap.count(entity))   
     {
         return; // Entity doesn't exist.
     }
@@ -636,36 +644,69 @@ void Registry::RemoveComponent(const EntityID& entity)
 template<class T>
 T* Registry::GetComponent(const EntityID& entity) 
 {
-    if(!HasComponent<T>(entity)) 
+    if(!IsComponentRegistered<T>()) 
     {
-        throw std::runtime_error("entity does not have requested component!");
+        throw std::runtime_error("Attempting to RemoveComponent with an unregistered component!");
+    }
+
+    ComponentTypeID componentId = Component<T>::GetTypeID();
+
+    if(!mEntiyArchetypeMap.count(entity))   
+    {
+        return nullptr; // Entity doesn't exist.
     }
 
     Record& record = mEntiyArchetypeMap[entity];
 
     Archetype* archetype = record.archetype;
 
-    ComponentTypeID targetCompId = Component<T>::GetTypeID(); 
+    if(!archetype) 
+    {
+        return nullptr; // There's no components anyway.
+    }
 
-    IComponentBase* basePtr = mComponentBaseMap[targetCompId];
+    auto compItr = std::find(archetype->typeId.begin(), 
+        archetype->typeId.end(), componentId);
 
-    return basePtr; 
+    if(compItr == archetype->typeId.end()) 
+    {
+        throw std::runtime_error("Attempting to GetComponent from an Entity without that component!");
+    } 
 
+    size_t compIndex = std::distance(archetype->typeId.begin(), compItr);;
+
+    return (T*)archetype->componentData[compIndex];
 }
 
 
 template<class T>
 bool Registry::HasComponent(const EntityID& entity) 
 {
-    Record& record = mEntiyArchetypeMap[entity];
-    
-    Archetype* archetype = record.archetype;
-
-    ComponentTypeID targetCompId = Component<T>::GetTypeID(); 
-
-    for(const auto& compId : archetype->typeId) 
+    if(!IsComponentRegistered<T>()) 
     {
-        if(compId == targetCompId) return true;
+        throw std::runtime_error("Attempting to RemoveComponent with an unregistered component!");
+    }
+
+    ComponentTypeID componentId = Component<T>::GetTypeID();
+
+    if(!mEntiyArchetypeMap.count(entity))   
+    {
+        return false; // Entity doesn't exist.
+    }
+
+    Record& record = mEntiyArchetypeMap[entity];
+
+    Archetype* oldArchetype = record.archetype;
+
+    if(!oldArchetype) 
+    {
+        return false; // There's no components anyway.
+    }
+
+    if(std::find(oldArchetype->typeId.begin(), oldArchetype->typeId.end(), componentId) 
+        != oldArchetype->typeId.end())
+    {
+        return true; // This entity doesn't have this component.
     }
 
     return false;
@@ -730,18 +771,21 @@ void Registry::RemoveEntity(const EntityID& entity)
 
     mEntiyArchetypeMap.erase(entity);
 
-    std::vector<EntityID>::iterator willBeRemoved
-        = std::find(oldArchetype->entities.begin(),
-                    oldArchetype->entities.end(),
-                    entity);
+    std::vector<EntityID>::iterator willBeRemoved = std::find(
+        oldArchetype->entities.begin(),
+        oldArchetype->entities.end(),
+        entity);
 
     std::for_each(willBeRemoved, oldArchetype->entities.end(),
-                  [this,&oldArchetype,&entity](const EntityID& entityId)
+                  [this, &oldArchetype, &entity](const EntityID& entityId)
     {
-        if(entityId == entity)
+        if(entityId == entity) 
+        {
             return; // No need to adjust our removing one.
-        Record& moveR = mEntiyArchetypeMap[entityId];
-        moveR.index -= 1;
+        }
+
+        Record& mover = mEntiyArchetypeMap[entityId];
+        mover.index -= 1;
     });
 
     oldArchetype->entities.erase(willBeRemoved);
@@ -752,6 +796,26 @@ template<class... Ts>
 std::vector<EntityID> Registry::GetAllEnittiesWith() 
 {
 
+    constexpr size_t argCount = sizeof...(Ts);
+
+    std::vector<ComponentTypeID> components{};
+
+    ProcessComponents<Ts...>(&components);
+
+}
+
+
+template<class T, class...Ts>
+void Registry::ProcessComponents(std::vector<ComponentTypeID>* components) 
+{
+    if(!IsComponentRegistered<T>()) 
+    {
+        throw std::runtime_error("Can't get all entities with an unregistered component!");
+    }
+
+    components->push_back(Component<T>::GetTypeID());
+
+    ProcessComponents<Ts...>();
 }
 
 
