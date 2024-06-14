@@ -1,7 +1,6 @@
 #ifndef SILVERBACK_UNIT_TESTS_COMPONENTS_HPP
 #define SILVERBACK_UNIT_TESTS_COMPONENTS_HPP
 
-#include <gtest/gtest.h>
 #include <Silverback.hpp>
 
 struct Position 
@@ -22,6 +21,8 @@ struct Velocity
 
 struct Texture
 {
+    Texture() {}
+    Texture(const char* tex) : texture{tex} {}
     const char* texture = "";
 };
 

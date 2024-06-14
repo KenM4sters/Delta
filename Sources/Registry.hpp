@@ -126,7 +126,7 @@ public:
 
     virtual ArchetypeID GetArchetypeTarget() const = 0;
     
-    virtual void DoAction(float elapsedTime, Archetype* archetype) const = 0;
+    virtual void DoAction(float elapsedTime, Archetype* archetype) = 0;
 
 };
 
@@ -145,12 +145,9 @@ public:
     ~System();
 
 	virtual ArchetypeID GetArchetypeTarget() const override;
-
-	virtual void DoAction(const float elapsedMilliseconds, Archetype* archetype) const override;
 	
 	void Action(ActionDef action);
 
-private:
     template<std::size_t Index1, typename T, typename... Ts>
 	std::enable_if_t<Index1==sizeof...(Cs)> DoAction(const float elapsedMilliseconds,
 		const ArchetypeID& archetypes,
@@ -166,6 +163,8 @@ private:
 		T& t,
 		Ts... ts
     );
+
+    virtual void DoAction(const float elapsedMilliseconds, Archetype* archetype) override;
 
 private:
 	Registry& mRegistry;
@@ -322,7 +321,7 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
 
     ComponentTypeID componentId = Component<T>::GetTypeID();
 
-    const size_t compDataSize = mComponentBaseMap[componentId]->GetSize();
+    const size_t& compDataSize = mComponentBaseMap[componentId]->GetSize();
 
     Record& record = mEntiyArchetypeMap[entity];
     Archetype* oldArchetype = record.archetype; // nullptr in the case of the dummy record.
@@ -332,13 +331,13 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
     Archetype* newArchetype = nullptr;
 
     if(oldArchetype) 
-    {
+    { 
         if(std::find(oldArchetype->typeId.begin(), oldArchetype->typeId.end(), componentId) != oldArchetype->typeId.end()) 
         {
             throw std::runtime_error("[WARNING] Attempting to AddComponent to an entity which already has the same component!");
             return nullptr;
         };
-
+ 
         ArchetypeID newArchetypeId = oldArchetype->typeId;
         newArchetypeId.push_back(componentId);
         std::sort(newArchetypeId.begin(), newArchetypeId.end());
@@ -348,28 +347,31 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
         for(size_t i = 0; i < newArchetypeId.size(); i++) 
         {
             const ComponentTypeID& newCompId = newArchetypeId[i];
+
             IComponentBase* newComp = mComponentBaseMap[newCompId];
+            
             const size_t& newCompDataSize = newComp->GetSize();
 
-            size_t currentSize = newArchetype->entities.size()*newCompDataSize;
-            size_t newSize = currentSize + newCompDataSize;
-            if(newSize > newArchetype->componentDataSize[0]) 
+            size_t currentSize = newArchetype->entities.size() * newCompDataSize;
+            size_t newSize = currentSize + newCompDataSize; 
+
+            if(newSize > newArchetype->componentDataSize[i]) 
             {
-                newArchetype->componentDataSize[0] *= 2;
-                newArchetype->componentDataSize[0] += newCompDataSize;
+                newArchetype->componentDataSize[i] *= 2;
+                newArchetype->componentDataSize[i] += newCompDataSize;
                 
-                unsigned char* newData = new unsigned char[newArchetype->componentDataSize[0]];
+                unsigned char* newData = new unsigned char[newArchetype->componentDataSize[i]];
                 
-                for(size_t i = 0; i < newArchetype->entities.size(); i++) 
+                for(size_t j = 0; j < newArchetype->entities.size(); j++) 
                 {
-                    newComp->MoveData(&newArchetype->componentData[0][i * newCompDataSize],
-                            &newData[i * newCompDataSize]);
-                    newComp->DestroyData(&newArchetype->componentData[0][i * newCompDataSize]);
+                    newComp->MoveData(&newArchetype->componentData[i][j * newCompDataSize],
+                            &newData[j * newCompDataSize]);
+                    newComp->DestroyData(&newArchetype->componentData[i][j * newCompDataSize]);
                 }
 
-                delete[] (newArchetype->componentData[0]);
+                delete[] (newArchetype->componentData[i]);
 
-                newArchetype->componentData[0] = newData;
+                newArchetype->componentData[i] = newData;
             }
 
             ArchetypeID oldArchetypeId = oldArchetype->typeId;
@@ -383,14 +385,14 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
 
                     const std::size_t& oldCompDataSize = oldComp->GetSize();
 
-                    oldComp->MoveData(&oldArchetype->componentData[j][record.index*oldCompDataSize],
+                    oldComp->MoveData(&oldArchetype->componentData[j][record.index * oldCompDataSize],
                                     &newArchetype->componentData[i][currentSize]);
-                    oldComp->DestroyData(&oldArchetype->componentData[j][record.index*oldCompDataSize]);
+                    oldComp->DestroyData(&oldArchetype->componentData[j][record.index * oldCompDataSize]);
 
                     goto cnt;
                 }
 		    }
-
+ 
             newComponent = new(&newArchetype->componentData[i][currentSize])T(std::forward<Args>(args)...);
 
             cnt:;
@@ -398,7 +400,7 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
 
         if(!oldArchetype->entities.empty()) 
         {
-            for(size_t i = 0; i < oldArchetype->entities.size(); i++) 
+            for(size_t i = 0; i < oldArchetype->typeId.size(); i++) 
             {
                 const ComponentTypeID& oldCompTypeID = oldArchetype->typeId[i];
 
@@ -408,28 +410,33 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
                     removeWrapper->DestroyData(
                         &oldArchetype->componentData[i][record.index*sizeof(T)]);
                 }
-
+                
                 IComponentBase* oldComp = mComponentBaseMap[oldCompTypeID];
 
                 const std::size_t& oldCompDataSize = oldComp->GetSize();
 
                 std::size_t currentSize = oldArchetype->entities.size() * oldCompDataSize;
                 std::size_t newSize = currentSize - oldCompDataSize;
-                unsigned char* newData = new unsigned char[oldArchetype->componentDataSize[i]-oldCompDataSize];
+
+                unsigned char* newData = new unsigned char[oldArchetype->componentDataSize[i] - oldCompDataSize];
+                
                 oldArchetype->componentDataSize[i] -= oldCompDataSize;
-                for(std::size_t e = 0, ei = 0; e < oldArchetype->entities.size(); ++e)
+                
+                for(std::size_t j = 0, k = 0; j < oldArchetype->entities.size(); j++)
                 {
-                    if(e == record.index)
+                    if(j == record.index) 
+                    {
                         continue;
+                    }
 
-                    oldComp->MoveData(&oldArchetype->componentData[i][e*oldCompDataSize],
-                                    &newData[ei*oldCompDataSize]);
-                    oldComp->DestroyData(&oldArchetype->componentData[i][e*oldCompDataSize]);
+                    oldComp->MoveData(&oldArchetype->componentData[i][j*oldCompDataSize],
+                                    &newData[k*oldCompDataSize]);
+                    oldComp->DestroyData(&oldArchetype->componentData[i][j*oldCompDataSize]);
 
-                    ++ei;
+                    k++;
                 }
 
-                delete [] oldArchetype->componentData[i];
+                delete[] oldArchetype->componentData[i];
 
                 oldArchetype->componentData[i] = newData;
             }
@@ -441,7 +448,7 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
             entity);
 
         std::for_each(willBeRemoved, oldArchetype->entities.end(),
-                    [this,&oldArchetype](const EntityID& entityId)
+                    [this, &oldArchetype](const EntityID& entityId)
         {
             Record& r = mEntiyArchetypeMap[entityId];
             r.index--;
@@ -459,6 +466,7 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
 
         size_t currentSize = newArchetype->entities.size()*compDataSize;
         size_t newSize = currentSize + compDataSize;
+
         if(newSize > newArchetype->componentDataSize[0]) 
         {
             newArchetype->componentDataSize[0] *= 2;
@@ -477,6 +485,7 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
 
             newArchetype->componentData[0] = newData;
         }
+
         newComponent = new(&newArchetype->componentData[0][currentSize])T(std::forward<Args>(args)...);
     }
 
@@ -855,7 +864,7 @@ System<Cs...>::~System()
 template<class... Cs>
 ArchetypeID System<Cs...>::GetArchetypeTarget() const  
 {
-    return SortTargets({Component<Cs>::GetTypeId()...});
+    return SortTargets({Component<Cs>::GetTypeID()...});
 }
 
 template<class... Cs>
@@ -867,7 +876,7 @@ void System<Cs...>::Action(ActionDef action)
 
 template<class... Cs>
 template<std::size_t Index1, typename T, typename... Ts>
-std::enable_if_t<Index1==sizeof...(Cs)> System<Cs...>::DoAction(const float elapsedMilliseconds,
+std::enable_if_t<Index1 == sizeof...(Cs)> System<Cs...>::DoAction(const float elapsedMilliseconds,
     const ArchetypeID& archetypes,
     const std::vector<EntityID>& entities,
     T& t,
@@ -875,10 +884,10 @@ std::enable_if_t<Index1==sizeof...(Cs)> System<Cs...>::DoAction(const float elap
 ) 
 {
     mAction(elapsedMilliseconds, entities, ts...);
-}
+} 
 
 template<class...Cs>
-template<std::size_t Index, typename T, typename... Ts>
+template<size_t Index, typename T, typename... Ts>
 std::enable_if_t<Index != sizeof...(Cs)> System<Cs...>::DoAction(const float elapsedMilliseconds,
     const ArchetypeID& archetypes,
     const std::vector<EntityID>& entities,
@@ -887,14 +896,17 @@ std::enable_if_t<Index != sizeof...(Cs)> System<Cs...>::DoAction(const float ela
 ) 
 {
     using tuple = std::tuple_element<Index, std::tuple<Cs...>>::type;
+    
     std::size_t index2 = 0;
     ComponentTypeID thisTypeCS = Component<tuple>::GetTypeID();
     ComponentTypeID thisArchetypeID = archetypes[index2];
+
     while(thisTypeCS != thisArchetypeID && index2 < archetypes.size())
     {
         index2++;
         thisArchetypeID = archetypes[index2];
     }
+
     if(index2 == archetypes.size())
     {
         throw std::runtime_error("System was executed against an incorrect Archetype");
@@ -905,7 +917,7 @@ std::enable_if_t<Index != sizeof...(Cs)> System<Cs...>::DoAction(const float ela
 }
 
 template<class... Cs>
-void System<Cs...>::DoAction(const float elapsedMilliseconds, Archetype* archetype) const  
+void System<Cs...>::DoAction(const float elapsedMilliseconds, Archetype* archetype)  
 {
     if(mActionSet) 
     {

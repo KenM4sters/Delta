@@ -1,2 +1,2 @@
 #!/bin/bash
-build/Tests/CustomTests/SilverbackCustomTests
+build/Tests/Custom/SilverbackCustomTests

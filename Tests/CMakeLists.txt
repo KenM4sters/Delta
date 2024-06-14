@@ -1,2 +1,2 @@
-add_subdirectory(UnitTests)
-add_subdirectory(CustomTests)
+add_subdirectory(Units)
+add_subdirectory(Custom)
