@@ -6,10 +6,24 @@ project(
     LANGUAGES C CXX
 )
 
+#enable_testing()
+
 set(CMAKE_CXX_STANDARD 20)
 
-enable_testing()
-include(CTest)
+option(SILVERBACK_BUILD_UNIT_TESTS "Build unit tests" ON)
+option(SILVERBACK_BUILD_DEMO "Build demo application" OFF)
 
-add_subdirectory(External/GoogleTest)
-add_subdirectory(Tests)
+
+if(SILVERBACK_BUILD_UNIT_TESTS)
+    add_subdirectory(External/GoogleTest)
+    add_subdirectory(Units)
+endif()
+
+if(SILVERBACK_BUILD_DEMO)
+    add_subdirectory(External/Glad)
+    add_subdirectory(External/GLFW)
+    add_subdirectory(Demo)
+endif()
+
+
+#include(CTest)

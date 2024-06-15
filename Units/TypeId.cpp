@@ -1,6 +1,9 @@
-#include "../Includes.hpp"
 #include <gtest/gtest.h>
+#include "Silverback.hpp"
 
+struct Velocity {};
+struct Position {};
+struct Texture {};
 
 TEST(ExampleTest, TypeID) 
 {
