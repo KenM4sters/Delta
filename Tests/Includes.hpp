@@ -19,6 +19,14 @@ struct Velocity
     float y;
 };
 
+struct BoundingBox 
+{
+    BoundingBox() {}
+    BoundingBox(float x, float y) : x{x}, y{y} {}
+    float x;
+    float y;
+};
+
 struct Texture
 {
     Texture() {}

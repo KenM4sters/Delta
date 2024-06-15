@@ -110,6 +110,8 @@ public:
         return mRegistry->AddComponent<T>(mID, std::forward<T>(t));
     }
 
+    inline const EntityID& GetID() const { return mID; }
+
 private:
     EntityID mID;
     Registry* mRegistry = nullptr;
@@ -266,16 +268,16 @@ inline void Registry::RunSystems(const uint8_t layer, const float elapsedTime)
 {
     for(auto system : mSystemsMap[layer]) 
     {
-        const ArchetypeID& key = system->GetArchetypeTarget();
+        const ArchetypeID& target = system->GetArchetypeTarget();
 
         for(auto archetype : mArchetypes) 
         {
             if(std::includes(archetype->typeId.begin(), archetype->typeId.end(),
-                key.begin(), key.end()))
+                target.begin(), target.end()))
             {
                 // this archetype has all the types required by the system
                 // so we can pull it's relevant data, reinterpret them as
-                // their correct types, and call the Func in the system
+                // their correct types, and call the Action in the system.
                 system->DoAction(elapsedTime, archetype);
             }
         }
@@ -369,21 +371,21 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
                     newComp->DestroyData(&newArchetype->componentData[i][j * newCompDataSize]);
                 }
 
-                delete[] (newArchetype->componentData[i]);
+                delete[] newArchetype->componentData[i];
 
                 newArchetype->componentData[i] = newData;
             }
 
             ArchetypeID oldArchetypeId = oldArchetype->typeId;
 
-            for(std::size_t j = 0; j < oldArchetype->typeId.size(); j++)
+            for(size_t j = 0; j < oldArchetype->typeId.size(); j++)
 		    {
                 const ComponentTypeID& oldCompId = oldArchetype->typeId[j];
                 if(oldCompId == newCompId)
                 {
                     IComponentBase* oldComp = mComponentBaseMap[oldCompId];
 
-                    const std::size_t& oldCompDataSize = oldComp->GetSize();
+                    const size_t& oldCompDataSize = oldComp->GetSize();
 
                     oldComp->MoveData(&oldArchetype->componentData[j][record.index * oldCompDataSize],
                                     &newArchetype->componentData[i][currentSize]);
@@ -408,30 +410,30 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
                 {
                     IComponentBase* removeWrapper = mComponentBaseMap[componentId];
                     removeWrapper->DestroyData(
-                        &oldArchetype->componentData[i][record.index*sizeof(T)]);
+                        &oldArchetype->componentData[i][record.index * sizeof(T)]);
                 }
                 
                 IComponentBase* oldComp = mComponentBaseMap[oldCompTypeID];
 
-                const std::size_t& oldCompDataSize = oldComp->GetSize();
+                const size_t& oldCompDataSize = oldComp->GetSize();
 
-                std::size_t currentSize = oldArchetype->entities.size() * oldCompDataSize;
-                std::size_t newSize = currentSize - oldCompDataSize;
+                size_t currentSize = oldArchetype->entities.size() * oldCompDataSize;
+                size_t newSize = currentSize - oldCompDataSize;
 
                 unsigned char* newData = new unsigned char[oldArchetype->componentDataSize[i] - oldCompDataSize];
                 
                 oldArchetype->componentDataSize[i] -= oldCompDataSize;
                 
-                for(std::size_t j = 0, k = 0; j < oldArchetype->entities.size(); j++)
+                for(size_t j = 0, k = 0; j < oldArchetype->entities.size(); j++)
                 {
                     if(j == record.index) 
                     {
                         continue;
                     }
 
-                    oldComp->MoveData(&oldArchetype->componentData[i][j*oldCompDataSize],
-                                    &newData[k*oldCompDataSize]);
-                    oldComp->DestroyData(&oldArchetype->componentData[i][j*oldCompDataSize]);
+                    oldComp->MoveData(&oldArchetype->componentData[i][j * oldCompDataSize],
+                                    &newData[k * oldCompDataSize]);
+                    oldComp->DestroyData(&oldArchetype->componentData[i][j * oldCompDataSize]);
 
                     k++;
                 }
@@ -448,9 +450,9 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
             entity);
 
         std::for_each(willBeRemoved, oldArchetype->entities.end(),
-                    [this, &oldArchetype](const EntityID& entityId)
+                    [this, &oldArchetype](const EntityID& ent)
         {
-            Record& r = mEntiyArchetypeMap[entityId];
+            Record& r = mEntiyArchetypeMap[ent];
             r.index--;
         });
 
@@ -464,7 +466,7 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
 
         newArchetype = GetArchetype(newArchetypeId);
 
-        size_t currentSize = newArchetype->entities.size()*compDataSize;
+        size_t currentSize = newArchetype->entities.size() * compDataSize;
         size_t newSize = currentSize + compDataSize;
 
         if(newSize > newArchetype->componentDataSize[0]) 
@@ -481,7 +483,7 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
 			    newComp->DestroyData(&newArchetype->componentData[0][i * compDataSize]);
             }
 
-            delete[](newArchetype->componentData[0]);
+            delete[] newArchetype->componentData[0];
 
             newArchetype->componentData[0] = newData;
         }
@@ -864,7 +866,7 @@ System<Cs...>::~System()
 template<class... Cs>
 ArchetypeID System<Cs...>::GetArchetypeTarget() const  
 {
-    return SortTargets({Component<Cs>::GetTypeID()...});
+    return SortTargets({{Component<Cs>::GetTypeID()...}});
 }
 
 template<class... Cs>
