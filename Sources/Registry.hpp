@@ -9,7 +9,6 @@
 
 namespace slv 
 {
-
 class Entity;
 class ISystemBase;
 
@@ -17,14 +16,39 @@ template<class... Cs>
 class System;
 
 /**
- * @brief 
+ * @brief The Registry class pulls everything together (Entities, Components and Systems)
+ * into one single class that end user interacts with to create and manager the ECS. 
+ * Remember that an Entity is merely a unique Id, a Component is just a pointer to some
+ * memory block with some utility functions to construct, move and destroy some object at 
+ * that memory location, and a System just calls a user-defined function for each component
+ * that's registers of a user-defined type... 
+ * In not so many words, an Entity is a number, a Component is a pointer, and a System is a
+ * function. The actual logic of storing, moving, deleting and accessing 
+ * all of these is implemented here.  
 */
 class Registry 
 {
-private: 
+private:
+    /**
+     * @brief A Record is best understood with the context that it's registered within a 
+     * map where each key is the entity that the record belongs to, and the value is the
+     * record itself. Each Record object holds a pointer to an Arcehtype that holds
+     * the information about a group of components (the components that said Entity has),
+     * and an index into that component array where the components associated with said Entity
+     * belongs. Remember, many entities can share the same archetype, so each entity will
+     * need an index into that array where its specific components belong.
+     */
     struct Record 
     {
+        /**
+         * @brief A pointer to an Archetype which holds the components of the entity that this
+         * record belongs to.
+         */
         Archetype* archetype;
+        /**
+         * @brief The index into the components array of the Arcehtype whwere the component
+         * data for this specific entity belongs. 
+         */
         size_t index;
     };
 
@@ -37,14 +61,13 @@ public:
 
     inline ~Registry();
 
-    template<class T>
-    void RegisterComponent();
+    inline std::unique_ptr<Entity> CreateEntity();
 
-    template<class T>
-    bool IsComponentRegistered();
+    template<class...Cs>
+    std::unique_ptr<System<Cs...>> CreateSystem(uint32_t layer = 0);
 
     template<class T, typename... Args>
-    T* AddComponent(const EntityID& entity, Args&&... args);
+    T* Add(const EntityID& entity, Args&&... args);
 
     template<class T>
     void RemoveComponent(const EntityID& entity);
@@ -57,10 +80,6 @@ public:
 
     template<class... Ts>
     std::vector<EntityID> GetAllEnittiesWith();
-
-    inline void RegisterSystem(const uint8_t& layer, ISystemBase* system);
-
-    inline void RegisterEntity(const EntityID& entity);
 
     inline void RemoveEntity(const EntityID& entity);
 
@@ -95,19 +114,18 @@ public:
     explicit Entity(Registry* registry)
         : mID{registry->GetNewID()}, mRegistry{registry}
     {
-        mRegistry->RegisterEntity(mID);
     }
 
     template<class T, typename... Args>
-    T* AddComponent(Args&&... args) 
+    T* Add(Args&&... args) 
     {
-        return mRegistry->AddComponent<T>(mID, std::forward<Args>(args)...);
+        return mRegistry->Add<T>(mID, std::forward<Args>(args)...);
     }
 
     template<class T>
-    T* AddComponent(T&& t) 
+    T* Add(T&& t) 
     {
-        return mRegistry->AddComponent<T>(mID, std::forward<T>(t));
+        return mRegistry->Add<T>(mID, std::forward<T>(t));
     }
 
     inline const EntityID& GetID() const { return mID; }
@@ -142,7 +160,7 @@ class System : public ISystemBase
 public:
 	typedef std::function<void(const float, const std::vector<EntityID>&, Cs*...)> ActionDef;
 	
-	System(Registry& registry, const std::uint8_t& layer);
+	System(Registry* registry, const std::uint32_t& layer);
 
     ~System();
 
@@ -169,7 +187,7 @@ public:
     virtual void DoAction(const float elapsedMilliseconds, Archetype* archetype) override;
 
 private:
-	Registry& mRegistry;
+	Registry* mRegistry = nullptr;
 
 	ActionDef mAction;
 	
@@ -217,50 +235,30 @@ inline Registry::~Registry()
     }
 }
 
+inline std::unique_ptr<Entity> Registry::CreateEntity() 
+{
+    EntityID newId = GetNewID();
+    Record pch{};
+    pch.archetype = nullptr;
+    pch.index = 0;
+    mEntiyArchetypeMap[newId] = pch;
+
+    return std::make_unique<Entity>(this);
+}
+
+template<class...Cs>
+std::unique_ptr<System<Cs...>> Registry::CreateSystem(uint32_t layer) 
+{
+    auto system = std::make_unique<System<Cs...>>(this, layer);
+    mSystemsMap[layer].push_back(system.get());
+
+    return std::move(system);
+}
+
 
 inline const EntityID Registry::GetNewID() 
 {
     return mNumEntities++;
-}
-
-
-template<class T>
-void Registry::RegisterComponent() 
-{
-    ComponentTypeID componentTypeID = Component<T>::GetTypeID();
-
-    if(mComponentBaseMap.count(componentTypeID)) 
-    {
-        return;
-    }
-
-    mComponentBaseMap.emplace(componentTypeID, new Component<T>);
-}
-
-
-template<class T>
-bool Registry::IsComponentRegistered() 
-{
-    if(mComponentBaseMap.count(Component<T>::GetTypeID())) 
-    {
-        return true;
-    }
-    return false;
-}
-
-
-inline void Registry::RegisterSystem(const uint8_t& layer, ISystemBase* system) 
-{
-    mSystemsMap[layer].push_back(system);
-}
-
-
-inline void Registry::RegisterEntity(const EntityID& entity) 
-{
-    Record pch{};
-    pch.archetype = nullptr;
-    pch.index = 0;
-    mEntiyArchetypeMap[entity] = pch;
 }
 
 
@@ -314,11 +312,13 @@ inline Archetype* Registry::GetArchetype(const ArchetypeID& id)
 
 
 template<class T, typename... Args>
-T* Registry::AddComponent(const EntityID& entity, Args&&... args) 
+T* Registry::Add(const EntityID& entity, Args&&... args) 
 {
-    if(!IsComponentRegistered<T>()) 
+    ComponentTypeID componentTypeID = Component<T>::GetTypeID();
+
+    if(!mComponentBaseMap.count(componentTypeID)) 
     {
-        throw std::runtime_error("Attempting to AddComponent with an unregistered component!");
+        mComponentBaseMap.emplace(componentTypeID, new Component<T>);
     }
 
     ComponentTypeID componentId = Component<T>::GetTypeID();
@@ -336,7 +336,7 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
     { 
         if(std::find(oldArchetype->typeId.begin(), oldArchetype->typeId.end(), componentId) != oldArchetype->typeId.end()) 
         {
-            throw std::runtime_error("[WARNING] Attempting to AddComponent to an entity which already has the same component!");
+            throw std::runtime_error("[WARNING] Attempting to Add to an entity which already has the same component!");
             return nullptr;
         };
  
@@ -502,10 +502,6 @@ T* Registry::AddComponent(const EntityID& entity, Args&&... args)
 template<class T>
 void Registry::RemoveComponent(const EntityID& entity) 
 {
-    if(!IsComponentRegistered<T>()) 
-    {
-        throw std::runtime_error("Attempting to RemoveComponent with an unregistered component!");
-    }
 
     ComponentTypeID componentId = Component<T>::GetTypeID();
 
@@ -655,10 +651,6 @@ void Registry::RemoveComponent(const EntityID& entity)
 template<class T>
 T* Registry::GetComponent(const EntityID& entity) 
 {
-    if(!IsComponentRegistered<T>()) 
-    {
-        throw std::runtime_error("Attempting to RemoveComponent with an unregistered component!");
-    }
 
     ComponentTypeID componentId = Component<T>::GetTypeID();
 
@@ -693,10 +685,6 @@ T* Registry::GetComponent(const EntityID& entity)
 template<class T>
 bool Registry::HasComponent(const EntityID& entity) 
 {
-    if(!IsComponentRegistered<T>()) 
-    {
-        throw std::runtime_error("Attempting to RemoveComponent with an unregistered component!");
-    }
 
     ComponentTypeID componentId = Component<T>::GetTypeID();
 
@@ -819,11 +807,6 @@ std::vector<EntityID> Registry::GetAllEnittiesWith()
 template<class T, class...Ts>
 void Registry::ProcessComponents(std::vector<ComponentTypeID>* components) 
 {
-    if(!IsComponentRegistered<T>()) 
-    {
-        throw std::runtime_error("Can't get all entities with an unregistered component!");
-    }
-
     components->push_back(Component<T>::GetTypeID());
 
     ProcessComponents<Ts...>();
@@ -851,10 +834,9 @@ ArchetypeID SortTargets(ArchetypeID types)
 
 
 template<class...Cs>
-System<Cs...>::System(Registry& registry, const std::uint8_t& layer)
+System<Cs...>::System(Registry* registry, const std::uint32_t& layer)
     : mRegistry{registry}, mActionSet{false}
 {
-    mRegistry.RegisterSystem(layer, this);
 }
 
 template<class...Cs>

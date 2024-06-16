@@ -1,7 +1,7 @@
 # Silverback
 
-Silverback is a an ECS framework that's designed to offer a comfortable balance between
-peformance, flexibility and ease of use. 
+Silverback is a flexible, header-only ECS framework that's designed to offer a comfortable balance between
+peformance and ease of use. 
 
 This is currently one of my main projects that I'm working on, so expect bugs and frequent changes.
 
@@ -13,6 +13,7 @@ This is currently one of my main projects that I'm working on, so expect bugs an
 - Unit Tests
 - CMake build system
 - An intuitive API
+- Header-only
 - Centralised Resigstry class for ease of use
 - Base class pointer system to support virtually any object as components without having 
   to use inheritance

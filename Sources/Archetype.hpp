@@ -21,9 +21,27 @@ typedef unsigned char* ComponentData;
 */
 struct Archetype 
 {
+    /**
+     * @brief A vector of the component Ids that the
+     * archetype is interested in. 
+     */
     ArchetypeID typeId;
+    /**
+     * @brief A vector of all the entities that share this archetype (ie have a superset
+     * of the components in typeId).
+     */
     std::vector<EntityID> entities;
+    /**
+     * @brief A vector of pointers to the data that belongs to each component found
+     * in typeId.
+     */
     std::vector<ComponentData> componentData;
+    /**
+     * @brief Since we're heap allocating the data for each component ourselves and only holding
+     * pointers to them, we need to hold a respective vector of sizes that correspond to the 
+     * size of the data for each component, so that we can properly navigate through the 
+     * componentData with pointer arithmetic.
+     */
     std::vector<size_t> componentDataSize;
 };
 }

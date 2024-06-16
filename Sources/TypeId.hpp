@@ -27,6 +27,15 @@ template<class T>
 class TypeIDGenerator 
 {
 public:
+    /**
+     * @brief Returns a unique integer which is used to represent both entities and
+     * components, although the two will never be confused in implementation. Note that
+     * the id returned is based on a static variable, mCount which increments by 1 each
+     * time this function is called. Bare in mind that both this class AND function is
+     * templated, meaning that many static instances of mCount exist independantly of 
+     * each other, essentially allowing us to have intances of mCount for each different
+     * component.
+     */
     template<class U>
     static const TypeID GetNewID() 
     {
