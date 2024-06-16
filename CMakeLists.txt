@@ -24,6 +24,7 @@ endif()
 if(SILVERBACK_BUILD_DEMO)
     add_subdirectory(External/Glad)
     add_subdirectory(External/GLFW)
+    add_subdirectory(External/GLM)
     add_subdirectory(Demo)
 endif()
 

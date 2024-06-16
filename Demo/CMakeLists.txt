@@ -7,11 +7,12 @@ target_include_directories(SilverbackDemo
     PUBLIC ${CMAKE_SOURCE_DIR}/Sources/
     PUBLIC ${CMAKE_SOURCE_DIR}/External/GLFW/include/
     PUBLIC ${CMAKE_SOURCE_DIR}/External/Glad/include/
+    PUBLIC ${CMAKE_SOURCE_DIR}/External/GLM/
 )
 
 # Links the SilverbackDemo executable against the glfw and glad libraries.
 # Required only for this demo, not for Silverback itself (which is header only - no library).
-target_link_libraries(SilverbackDemo glfw glad)
+target_link_libraries(SilverbackDemo glfw glad glm)
 
 
 # Address Sanitizer config for detailed error info.
