@@ -57,7 +57,7 @@ int main(int argc, char** argv)
     slv::Registry registry;
 
     // Camera
-    glm::mat4 projection = glm::perspective(45.0f, 800/600.0f, 0.0f, 100.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f/600.0f, 0.1f, 100.0f);
 
     // Create some entities.
     std::unique_ptr<slv::Entity> boxes[25];
@@ -76,9 +76,11 @@ int main(int argc, char** argv)
         layout (location = 2) in vec3 aNormal;
         uniform mat4 uModel;
         uniform mat4 uProjection;
+        out vec3 vPos;
         void main() 
         {
             gl_Position = uProjection * uModel * vec4(aPos, 1.0);
+            vPos = aPos;
         }
     )";
 
@@ -86,37 +88,35 @@ int main(int argc, char** argv)
         #version 330 core
         out vec4 FragColor;
         uniform vec3 uColor;
+        in vec3 vPos;
         void main() 
         {
-            FragColor = vec4(uColor, 1.0);
+            FragColor = vec4(vPos, 1.0);
         }
     )";
 
 
     CreateShader(&shaderProgram, vertSrc, fragSrc);
 
+    std::vector<glm::vec3> positions{};
+
+    for(int j = -2; j < 3; j++)
+    {       
+        for(int k = -2; k < 3; k++) 
+        {
+            float x = j;
+            float y = k;
+            positions.push_back(glm::vec3(x, y, -3.0f)); 
+        }
+    } 
 
     for(size_t i = 0; i < sizeof(boxes)/sizeof(boxes[0]); i++) 
     {
         boxes[i] = registry.CreateEntity();
 
-        glm::vec3 positions[25];
-
-        for(size_t j = 0; j < 5; j++) 
-        {   
-            for(size_t k = 0; k < 5; k++) 
-            {
-                float displacement = 1 / 5;
-                float x = displacement * j;
-                float y = displacement * k;
-                positions[j + k] = glm::vec3(x, y, 0.0f); 
-            }
-        }
-
-
         // Add some components. 
         //
-        boxes[i]->Add<Transform>(positions[i], glm::vec3(0.1f, 0.1f, 1.0f));
+        boxes[i]->Add<Transform>(positions[i], glm::vec3(0.1f, 0.1f, 0.1f));
         boxes[i]->Add<Material>(glm::vec3(1.0f, 0.5f, 0.0f));
         boxes[i]->Add<Camera>(projection);
         boxes[i]->Add<Renderable>(vao, shaderProgram);
@@ -134,17 +134,17 @@ int main(int argc, char** argv)
         for(size_t i = 0; i < entities.size(); i++) 
         {
             glm::mat4 modelMatrix{1.0f};
-            modelMatrix = glm::scale(modelMatrix, t->scale);
-            modelMatrix = glm::translate(modelMatrix, t->position);
+            modelMatrix = glm::translate(modelMatrix, t[i].position);
+            modelMatrix = glm::scale(modelMatrix, t[i].scale);
 
             glm::mat4 projectionMatrix = c->projection;
 
-            glUseProgram(r->shader);
-            glUniform3fv(glGetUniformLocation(r->shader, "uColor"), 1, &m->color[0]);
-            glUniformMatrix4fv(glGetUniformLocation(r->shader, "uModel"), 1, GL_FALSE, &modelMatrix[0][0]);
-            glUniformMatrix4fv(glGetUniformLocation(r->shader, "uProjection"), 1, GL_FALSE, &projectionMatrix[0][0]);
+            glUseProgram(r[i].shader);
+            glUniform3fv(glGetUniformLocation(r[i].shader, "uColor"), 1, &m[i].color[0]);
+            glUniformMatrix4fv(glGetUniformLocation(r[i].shader, "uModel"), 1, GL_FALSE, &modelMatrix[0][0]);
+            glUniformMatrix4fv(glGetUniformLocation(r[i].shader, "uProjection"), 1, GL_FALSE, &projectionMatrix[0][0]);
 
-            glBindVertexArray(r->vao);
+            glBindVertexArray(r[i].vao);
             glDrawArrays(GL_TRIANGLES, 0, 36);
 
             glBindVertexArray(0);
@@ -157,7 +157,7 @@ int main(int argc, char** argv)
     auto previousFrame = std::chrono::high_resolution_clock::now();
     while(!glfwWindowShouldClose(sWindow)) 
     {
-        glClear(GL_COLOR_BUFFER_BIT); // Clears each pixel at the beginning of each frame.
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clears each pixel at the beginning of each frame.
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f); // Sets the background color.
 
         // Calculate the time step for each frame.
@@ -196,6 +196,10 @@ void InitContext()
     glfwSetKeyCallback(sWindow, WindowKeyCallback);
 
 	gladLoadGL(glfwGetProcAddress);
+
+    glViewport(0, 0, 800, 600);
+    glDepthFunc(GL_LESS);
+    glEnable(GL_DEPTH_TEST);
 }
 
 void WindowKeyCallback(GLFWwindow* window, int key, int mods, int scancode, int action) 
